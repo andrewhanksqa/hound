@@ -132,7 +132,7 @@ describe Linter::Jshint do
   end
 
   def stub_config_files(config_content)
-    stubbed_hound_yml = <<~YML
+    stubbed_hound_yml = <<-YML.strip_heredoc
       "jshint":
         "config_file": ".jshintrc"
     YML
