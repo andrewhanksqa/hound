@@ -80,10 +80,11 @@ describe Linter::Jshint do
     context "when the owner has no config enabled" do
       it "schedules a review job with the local config" do
         stub_owner_hound_config(instance_double("HoundConfig", content: {}))
-        build = build(:build, commit_sha: "foo", pull_request_number: 123)
+        build = create(:build, commit_sha: "foo", pull_request_number: 123)
         commit_file = build_commit_file(filename: "lib/a.js")
+        stubbed_local_config = stub_config_files('{"asi": true}')
+        linter = build_linter(build, stubbed_local_config)
         allow(Resque).to receive(:enqueue)
-        linter = build_linter(build, stub_config_files('{"asi": true}'))
 
         linter.file_review(commit_file)
 
@@ -102,14 +103,14 @@ describe Linter::Jshint do
 
     context "when there is an owner level config enabled" do
       it "schedules a review job with the owner's config merged with locals" do
-        build = build(:build, commit_sha: "foo", pull_request_number: 123)
+        build = create(:build, commit_sha: "foo", pull_request_number: 123)
+        stubbed_local_config = stub_config_files('{"asi": false, "maxlen": 50}')
         stub_owner_hound_config(
           HoundConfig.new(
-            stubbed_commit(stub_config_files('{"asi": false, "maxlen": 50}')),
+            stubbed_commit(stubbed_local_config),
           )
         )
-        linter = build_linter(build, stub_config_files('{"asi": true}')
-        )
+        linter = build_linter(build, stub_config_files('{"asi": true}'))
         commit_file = build_commit_file(filename: "lib/a.js")
 
         allow(Resque).to receive(:enqueue)
@@ -131,12 +132,14 @@ describe Linter::Jshint do
   end
 
   def stub_config_files(config_content)
+    stubbed_hound_yml = <<~YML
+      "jshint":
+        "config_file": ".jshintrc"
+    YML
+
     {
       ".jshintrc" => config_content,
-      ".hound.yml" => <<~CON,
-        "jshint":
-          "config_file": ".jshintrc"
-      CON
+      ".hound.yml" => stubbed_hound_yml,
     }
   end
 
