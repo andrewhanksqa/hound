@@ -108,7 +108,7 @@ describe Linter::Jshint do
         stub_owner_hound_config(
           HoundConfig.new(
             stubbed_commit(stubbed_local_config),
-          )
+          ),
         )
         linter = build_linter(build, stub_config_files('{"asi": true}'))
         commit_file = build_commit_file(filename: "lib/a.js")
