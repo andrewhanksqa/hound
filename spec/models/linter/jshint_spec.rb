@@ -83,19 +83,19 @@ describe Linter::Jshint do
         build = build(:build, commit_sha: "foo", pull_request_number: 123)
         commit_file = build_commit_file(filename: "lib/a.js")
         allow(Resque).to receive(:enqueue)
-        linter = build_linter(build)
+        linter = build_linter(build, stub_config_files('{"asi": true}'))
 
         linter.file_review(commit_file)
 
         expect(Resque).to have_received(:enqueue).with(
           JshintReviewJob,
-          filename: commit_file.filename,
           commit_sha: build.commit_sha,
-          linter_name: "jshint",
-          pull_request_number: build.pull_request_number,
-          patch: commit_file.patch,
+          config: '{"asi":true}',
           content: commit_file.content,
-          config: "{}",
+          filename: commit_file.filename,
+          linter_name: "jshint",
+          patch: commit_file.patch,
+          pull_request_number: build.pull_request_number,
         )
       end
     end
