@@ -77,29 +77,31 @@ describe Linter::Jshint do
       expect(result).not_to be_completed
     end
 
-    it "schedules a review job" do
-      stub_owner_hound_config(instance_double("HoundConfig", content: {}))
-      build = build(:build, commit_sha: "foo", pull_request_number: 123)
-      commit_file = build_commit_file(filename: "lib/a.js")
-      allow(Resque).to receive(:enqueue)
-      linter = build_linter(build)
+    context "when the owner has no config enabled" do
+      it "schedules a review job with the local config" do
+        stub_owner_hound_config(instance_double("HoundConfig", content: {}))
+        build = build(:build, commit_sha: "foo", pull_request_number: 123)
+        commit_file = build_commit_file(filename: "lib/a.js")
+        allow(Resque).to receive(:enqueue)
+        linter = build_linter(build)
 
-      linter.file_review(commit_file)
+        linter.file_review(commit_file)
 
-      expect(Resque).to have_received(:enqueue).with(
-        JshintReviewJob,
-        filename: commit_file.filename,
-        commit_sha: build.commit_sha,
-        linter_name: "jshint",
-        pull_request_number: build.pull_request_number,
-        patch: commit_file.patch,
-        content: commit_file.content,
-        config: "{}",
-      )
+        expect(Resque).to have_received(:enqueue).with(
+          JshintReviewJob,
+          filename: commit_file.filename,
+          commit_sha: build.commit_sha,
+          linter_name: "jshint",
+          pull_request_number: build.pull_request_number,
+          patch: commit_file.patch,
+          content: commit_file.content,
+          config: "{}",
+        )
+      end
     end
 
     context "when there is an owner level config enabled" do
-      it "schedules a review job with the owner's config" do
+      it "schedules a review job with the owner's config merged with locals" do
         build = build(:build, commit_sha: "foo", pull_request_number: 123)
         stub_owner_hound_config(
           HoundConfig.new(
